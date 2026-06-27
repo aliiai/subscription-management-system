@@ -110,6 +110,7 @@
         </section>
 
         {{-- CTA --}}
+        
         <section id="cta" class="px-6 py-24">
             <div data-animate="card" class="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-600/20 to-fuchsia-600/10 p-12 text-center">
                 <h2 class="text-3xl font-semibold tracking-tight">Ready to build?</h2>
