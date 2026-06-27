@@ -20,8 +20,7 @@ class RegisteredUserController extends Controller
      * Handle an incoming registration request.
      *
      * Provisions a new tenant (company) together with its first user, who
-     * becomes the tenant admin. Admin (platform) accounts are provisioned by
-     * the system and can never be registered through this endpoint.
+     * becomes the tenant owner.
      */
     public function store(RegisterRequest $request, LedgerService $ledger): RedirectResponse
     {

@@ -49,18 +49,6 @@ class UserFactory extends Factory
     }
 
     /**
-     * Indicate that the user is a system administrator.
-     */
-    public function admin(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'role' => UserRole::Admin,
-            'tenant_id' => null,
-            'is_owner' => false,
-        ]);
-    }
-
-    /**
      * Indicate that the user is the owner (admin) of their tenant.
      */
     public function owner(): static

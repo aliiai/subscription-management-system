@@ -4,7 +4,6 @@ namespace App\Enums;
 
 enum UserRole: string
 {
-    case Admin = 'admin';
     case Company = 'company';
 
     /**
@@ -13,7 +12,6 @@ enum UserRole: string
     public function label(): string
     {
         return match ($this) {
-            self::Admin => 'مدير النظام',
             self::Company => 'شركة',
         };
     }
@@ -24,7 +22,6 @@ enum UserRole: string
     public function dashboardRoute(): string
     {
         return match ($this) {
-            self::Admin => 'admin.dashboard',
             self::Company => 'company.dashboard',
         };
     }

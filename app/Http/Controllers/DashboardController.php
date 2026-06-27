@@ -20,14 +20,6 @@ class DashboardController extends Controller
     }
 
     /**
-     * Display the admin dashboard.
-     */
-    public function admin(): View
-    {
-        return view('dashboard.admin');
-    }
-
-    /**
      * Display the company dashboard with KPIs, charts and activity.
      */
     public function company(Request $request): View

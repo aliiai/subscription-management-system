@@ -10,13 +10,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['name', 'email', 'password', 'role', 'tenant_id', 'is_owner'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -31,14 +32,6 @@ class User extends Authenticatable
             'role' => UserRole::class,
             'is_owner' => 'boolean',
         ];
-    }
-
-    /**
-     * Determine if the user is a system administrator.
-     */
-    public function isAdmin(): bool
-    {
-        return $this->role === UserRole::Admin;
     }
 
     /**

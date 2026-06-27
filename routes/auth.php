@@ -1,8 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\CompanyController;
-use App\Http\Controllers\Admin\CompanyUserController;
-use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Company\ActivityLogController;
@@ -35,35 +32,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
-
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('dashboard', [DashboardController::class, 'admin'])->name('dashboard');
-
-        Route::get('companies', [CompanyController::class, 'index'])->name('companies');
-        Route::put('companies/{company}', [CompanyController::class, 'update'])->name('companies.update');
-        Route::delete('companies/{company}', [CompanyController::class, 'destroy'])->name('companies.destroy');
-
-        Route::get('company-users', [CompanyUserController::class, 'index'])->name('company-users');
-        Route::put('company-users/{user}', [CompanyUserController::class, 'update'])->name('company-users.update');
-        Route::delete('company-users/{user}', [CompanyUserController::class, 'destroy'])->name('company-users.destroy');
-
-        Route::get('customers', [AdminCustomerController::class, 'index'])->name('customers');
-
-        $pages = [
-            'users' => 'المستخدمون والصلاحيات',
-            'plans' => 'الخطط الاشتراكية',
-            'subscriptions' => 'الاشتراكات',
-            'invoices' => 'الفواتير',
-            'financial-summary' => 'ملخص مالي عام',
-            'settings' => 'إعدادات النظام',
-            'system-log' => 'سجل النظام',
-            'alerts' => 'التنبيهات',
-        ];
-
-        foreach ($pages as $slug => $title) {
-            Route::view($slug, 'admin.placeholder', ['title' => $title])->name($slug);
-        }
-    });
 
     Route::middleware('role:company')->prefix('company')->name('company.')->group(function () {
         Route::get('dashboard', [DashboardController::class, 'company'])->name('dashboard');

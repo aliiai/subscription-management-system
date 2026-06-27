@@ -36,6 +36,22 @@ class PlanRequest extends FormRequest
     }
 
     /**
+     * Allow API clients to submit features as a JSON array while the web form
+     * submits them as a newline-delimited string.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_array($this->input('features'))) {
+            $this->merge([
+                'features' => collect($this->input('features'))
+                    ->map(fn ($line) => trim((string) $line))
+                    ->filter()
+                    ->implode("\n"),
+            ]);
+        }
+    }
+
+    /**
      * Custom attribute names for validation messages.
      *
      * @return array<string, string>

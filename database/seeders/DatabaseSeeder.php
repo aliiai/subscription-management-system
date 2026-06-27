@@ -18,8 +18,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(AdminUserSeeder::class);
-
         $tenant = Tenant::firstOrCreate(
             ['name' => 'Test Company LLC'],
             [

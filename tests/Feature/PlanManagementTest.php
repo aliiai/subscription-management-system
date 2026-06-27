@@ -116,11 +116,4 @@ class PlanManagementTest extends TestCase
 
         $this->assertModelExists($plan);
     }
-
-    public function test_admin_cannot_access_plans(): void
-    {
-        $admin = User::factory()->admin()->create();
-
-        $this->actingAs($admin)->get(route('company.plans'))->assertForbidden();
-    }
 }

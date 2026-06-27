@@ -1,0 +1,907 @@
+{
+  "info": {
+    "name": "Accrual Hub API (v1)",
+    "_postman_id": "a1b2c3d4-0001-4a00-9000-accrualhubv1",
+    "description": "Professional REST API collection for the Accrual Hub multi-tenant subscription & accounting platform.\n\n## Getting started\n1. Set the `base_url` variable (default: http://127.0.0.1:8000).\n2. Call **Auth > Register** (new company) or **Auth > Login** (existing user). Both requests automatically store the returned token into the `token` collection variable.\n3. All protected requests send `Authorization: Bearer {{token}}` automatically.\n\n## Conventions\n- Versioned under `/api/v1`.\n- Multi-tenant: every request only ever sees the authenticated company's data.\n- List endpoints are paginated and accept `per_page`, plus resource-specific filters.\n- Money values are returned as numbers; dates as ISO strings.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "plan_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "customer_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "subscription_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "invoice_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "payment_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "journal_entry_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "notification_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Registration, login, session and token management.",
+      "item": [
+        {
+          "name": "Register Company",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.token) {",
+                  "        pm.collectionVariables.set('token', json.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Acme LLC\",\n  \"company_email\": \"info@acme.test\",\n  \"company_phone\": \"+966500000000\",\n  \"name\": \"Owner Name\",\n  \"email\": \"owner@acme.test\",\n  \"password\": \"Password123!\",\n  \"password_confirmation\": \"Password123!\",\n  \"device_name\": \"postman\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "register"]
+            },
+            "description": "Provision a new company (tenant) with its first owner user and seed the chart of accounts. Returns a personal access token."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.token) {",
+                  "        pm.collectionVariables.set('token', json.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@acme.test\",\n  \"password\": \"Password123!\",\n  \"device_name\": \"postman\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "login"]
+            },
+            "description": "Authenticate by email/password and receive a personal access token."
+          }
+        },
+        {
+          "name": "Current User (me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "me"]
+            },
+            "description": "Return the authenticated user and their company."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "logout"]
+            },
+            "description": "Revoke the access token used for the current request."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Plans",
+      "description": "Subscription plan management.",
+      "item": [
+        {
+          "name": "List Plans",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/plans?per_page=15&q=&cycle=&status=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plans"],
+              "query": [
+                { "key": "per_page", "value": "15" },
+                { "key": "q", "value": "", "description": "Search by plan name" },
+                { "key": "cycle", "value": "", "description": "monthly | quarterly | semi_annual | yearly" },
+                { "key": "status", "value": "", "description": "active | inactive" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Gold Plan\",\n  \"description\": \"Best for growing teams\",\n  \"price\": 500,\n  \"currency\": \"SAR\",\n  \"billing_cycle\": \"monthly\",\n  \"features\": [\"Unlimited customers\", \"Priority support\", \"Advanced reports\"],\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/plans",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plans"]
+            },
+            "description": "`features` accepts a JSON array (API) or a newline string (web form)."
+          }
+        },
+        {
+          "name": "Get Plan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/plans/{{plan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plans", "{{plan_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Plan",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Gold Plan (Updated)\",\n  \"description\": \"Updated description\",\n  \"price\": 550,\n  \"currency\": \"SAR\",\n  \"billing_cycle\": \"yearly\",\n  \"features\": [\"Unlimited customers\", \"24/7 support\"],\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/plans/{{plan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plans", "{{plan_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Plan",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/plans/{{plan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plans", "{{plan_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "description": "Customer management (optionally attaching a plan).",
+      "item": [
+        {
+          "name": "List Customers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/customers?per_page=15&q=&plan=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "customers"],
+              "query": [
+                { "key": "per_page", "value": "15" },
+                { "key": "q", "value": "", "description": "Search name / email / phone" },
+                { "key": "plan", "value": "", "description": "Plan id, or 'none' for customers without a plan" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sara Ahmed\",\n  \"email\": \"sara@example.com\",\n  \"phone\": \"+966500000001\",\n  \"plan_id\": {{plan_id}},\n  \"start_date\": \"2026-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/customers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "customers"]
+            },
+            "description": "Attaching `plan_id` opens an active subscription automatically. `plan_id` and `start_date` are optional."
+          }
+        },
+        {
+          "name": "Get Customer",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/customers/{{customer_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sara A. Ahmed\",\n  \"email\": \"sara.new@example.com\",\n  \"phone\": \"+966500000002\",\n  \"plan_id\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/customers/{{customer_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/customers/{{customer_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "description": "Link customers to plans.",
+      "item": [
+        {
+          "name": "List Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions?per_page=15&status=&plan=&customer=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions"],
+              "query": [
+                { "key": "per_page", "value": "15" },
+                { "key": "status", "value": "", "description": "active | canceled | expired" },
+                { "key": "plan", "value": "", "description": "Filter by plan id" },
+                { "key": "customer", "value": "", "description": "Filter by customer id" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": {{customer_id}},\n  \"plan_id\": {{plan_id}},\n  \"start_date\": \"2026-01-01\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions"]
+            }
+          }
+        },
+        {
+          "name": "Get Subscription",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/{{subscription_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "{{subscription_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": {{customer_id}},\n  \"plan_id\": {{plan_id}},\n  \"start_date\": \"2026-02-01\",\n  \"status\": \"canceled\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/{{subscription_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "{{subscription_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Subscription",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/{{subscription_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "{{subscription_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "description": "Invoicing and automated monthly generation (Cron simulation).",
+      "item": [
+        {
+          "name": "List Invoices",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/invoices?per_page=15&status=&customer=&q=&from=&to=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "invoices"],
+              "query": [
+                { "key": "per_page", "value": "15" },
+                { "key": "status", "value": "", "description": "unpaid | partially_paid | paid | void" },
+                { "key": "customer", "value": "", "description": "Filter by customer id" },
+                { "key": "q", "value": "", "description": "Search invoice number / customer name" },
+                { "key": "from", "value": "", "description": "Issue date from (YYYY-MM-DD)" },
+                { "key": "to", "value": "", "description": "Issue date to (YYYY-MM-DD)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": {{customer_id}},\n  \"subscription_id\": null,\n  \"issue_date\": \"2026-01-01\",\n  \"due_date\": \"2026-01-15\",\n  \"amount\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "invoices"]
+            },
+            "description": "Posts the issuing journal entry automatically: Dr Accounts Receivable / Cr Deferred Revenue."
+          }
+        },
+        {
+          "name": "Generate Monthly Invoices",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"month\": \"2026-02\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/invoices/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "invoices", "generate"]
+            },
+            "description": "Cron simulation: creates invoices for all active subscriptions for the given month. Idempotent. `month` is optional (defaults to current month)."
+          }
+        },
+        {
+          "name": "Get Invoice",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/invoices/{{invoice_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "invoices", "{{invoice_id}}"]
+            },
+            "description": "Returns the invoice with its payments and linked journal entries."
+          }
+        },
+        {
+          "name": "Void Invoice",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/invoices/{{invoice_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "invoices", "{{invoice_id}}"]
+            },
+            "description": "Voids an invoice that has no payments and reverses its journal entry. Returns 422 if payments exist."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "description": "Record payments against invoices.",
+      "item": [
+        {
+          "name": "List Payments",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments?per_page=15&q=&method=&invoice=&from=&to=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments"],
+              "query": [
+                { "key": "per_page", "value": "15" },
+                { "key": "q", "value": "", "description": "Search customer name / invoice number" },
+                { "key": "method", "value": "", "description": "cash | transfer | card" },
+                { "key": "invoice", "value": "", "description": "Filter by invoice id" },
+                { "key": "from", "value": "", "description": "Paid at from (YYYY-MM-DD)" },
+                { "key": "to", "value": "", "description": "Paid at to (YYYY-MM-DD)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoice_id\": {{invoice_id}},\n  \"amount\": 100,\n  \"paid_at\": \"2026-01-10\",\n  \"method\": \"cash\",\n  \"reference\": \"TRX-001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments"]
+            },
+            "description": "Posts the journal entry automatically: Dr Cash / Cr Accounts Receivable. Amount cannot exceed the invoice balance."
+          }
+        },
+        {
+          "name": "Get Payment",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/{{payment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "{{payment_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Payment",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/{{payment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "{{payment_id}}"]
+            },
+            "description": "Deletes a payment, reverses its journal entry and recalculates the invoice status."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Revenue Recognition",
+      "description": "Deferred revenue recognition (month-end simulation).",
+      "item": [
+        {
+          "name": "List Recognition Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/revenue-recognition?month=2026-03&view=pending&per_page=15",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "revenue-recognition"],
+              "query": [
+                { "key": "month", "value": "2026-03", "description": "Target month (YYYY-MM)" },
+                { "key": "view", "value": "pending", "description": "pending | recognized" },
+                { "key": "per_page", "value": "15" }
+              ]
+            },
+            "description": "Returns eligible/recognized invoices plus KPIs (deferred balance, recognized total, pending counts)."
+          }
+        },
+        {
+          "name": "Recognize Revenue",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"month\": \"2026-03\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/revenue-recognition/recognize",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "revenue-recognition", "recognize"]
+            },
+            "description": "Month-end simulation. Posts Dr Deferred Revenue / Cr Subscription Revenue for eligible invoices. Idempotent. `month` is optional."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accounting",
+      "description": "Chart of accounts and journal entries (double-entry ledger).",
+      "item": [
+        {
+          "name": "List Accounts",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts"]
+            },
+            "description": "Chart of accounts with current balances (Cash 1000, Accounts Receivable 1100, Deferred Revenue 2000, Subscription Revenue 4000)."
+          }
+        },
+        {
+          "name": "List Journal Entries",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/journal-entries?per_page=15&from=&to=&source_type=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "journal-entries"],
+              "query": [
+                { "key": "per_page", "value": "15" },
+                { "key": "from", "value": "", "description": "Entry date from (YYYY-MM-DD)" },
+                { "key": "to", "value": "", "description": "Entry date to (YYYY-MM-DD)" },
+                { "key": "source_type", "value": "", "description": "Morph class, e.g. App\\\\Models\\\\Invoice" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Journal Entry",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/journal-entries/{{journal_entry_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "journal-entries", "{{journal_entry_id}}"]
+            },
+            "description": "Returns the entry with its debit/credit lines and accounts."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "description": "Financial statements.",
+      "item": [
+        {
+          "name": "Income Statement",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/income-statement?from=2026-01-01&to=2026-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "income-statement"],
+              "query": [
+                { "key": "from", "value": "2026-01-01", "description": "Period start (YYYY-MM-DD)" },
+                { "key": "to", "value": "2026-12-31", "description": "Period end (YYYY-MM-DD)" }
+              ]
+            },
+            "description": "Subscription revenue over the selected range."
+          }
+        },
+        {
+          "name": "Balance Sheet",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/balance-sheet?as_of=2026-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "balance-sheet"],
+              "query": [
+                { "key": "as_of", "value": "2026-12-31", "description": "As-of date (YYYY-MM-DD)" }
+              ]
+            },
+            "description": "Assets, liabilities and equity as of the selected date."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "Aggregated company KPIs and statistics.",
+      "item": [
+        {
+          "name": "Get Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "dashboard"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Company notifications.",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications?per_page=20&unread=false",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "notifications"],
+              "query": [
+                { "key": "per_page", "value": "20" },
+                { "key": "unread", "value": "false", "description": "Set true to return only unread" }
+              ]
+            },
+            "description": "Includes `meta.unread_count`."
+          }
+        },
+        {
+          "name": "Mark All As Read",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications/read-all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "notifications", "read-all"]
+            }
+          }
+        },
+        {
+          "name": "Open Notification",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications/{{notification_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "notifications", "{{notification_id}}"]
+            },
+            "description": "Opens a notification and marks it as read."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "description": "Company profile, user profile, password and account.",
+      "item": [
+        {
+          "name": "Get Settings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/settings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "settings"]
+            }
+          }
+        },
+        {
+          "name": "Update Company",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme LLC\",\n  \"email\": \"billing@acme.test\",\n  \"phone\": \"+966500000000\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/settings/company",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "settings", "company"]
+            },
+            "description": "To upload a logo, use a multipart/form-data body with a `logo` file field (and optionally `remove_logo=1`)."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Owner Name\",\n  \"email\": \"owner@acme.test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/settings/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "settings", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"Password123!\",\n  \"password\": \"NewPassword123!\",\n  \"password_confirmation\": \"NewPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/settings/password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "settings", "password"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Account",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/settings/deactivate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "settings", "deactivate"]
+            },
+            "description": "Suspends the company and revokes all of its access tokens."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Activity Log",
+      "description": "Company activity history.",
+      "item": [
+        {
+          "name": "List Activity Log",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/activity-log?per_page=15&q=&type=&range=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "activity-log"],
+              "query": [
+                { "key": "per_page", "value": "15" },
+                { "key": "q", "value": "", "description": "Search title / body" },
+                { "key": "type", "value": "", "description": "customer | subscription | invoice | payment | revenue" },
+                { "key": "range", "value": "", "description": "today | week | month" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

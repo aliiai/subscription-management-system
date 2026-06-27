@@ -80,16 +80,19 @@ function initAuthPortal() {
 
     const copy = {
         login: {
-            title: 'تسجيل الدخول',
-            subtitle: 'مرحباً بك من جديد، سجّل دخولك للمتابعة',
+            title: 'حيّاك الله من جديد',
+            subtitle: 'سجّل دخولك وكمّل من وين وقفت.',
         },
         register: {
-            title: 'أنشئ حساب شركتك',
-            subtitle: 'ابدأ بإدارة اشتراكاتك وفواتيرك خلال دقائق',
+            title: 'سجّل شركتك بثواني',
+            subtitle: 'أنشئ حساب شركتك وابدأ تدير اشتراكاتك على طول.',
         },
     };
 
-    const activate = (mode) => {
+    const card = document.querySelector('[data-animate="auth-card"]');
+    let isAnimating = false;
+
+    const syncTabs = (mode) => {
         tabs.forEach((tab) => {
             const isActive = tab.dataset.authTab === mode;
             tab.classList.toggle('text-[#0a4589]', isActive);
@@ -99,29 +102,80 @@ function initAuthPortal() {
         if (indicator) {
             indicator.classList.toggle('-translate-x-full', mode === 'register');
         }
+    };
 
-        if (title && copy[mode]) {
-            title.textContent = copy[mode].title;
+    const swapCopy = (mode) => {
+        if (!copy[mode]) {
+            return;
+        }
+        const heads = [title, subtitle].filter(Boolean);
+        gsap.to(heads, {
+            opacity: 0,
+            y: -6,
+            duration: 0.15,
+            ease: 'power1.in',
+            onComplete: () => {
+                if (title) {
+                    title.textContent = copy[mode].title;
+                }
+                if (subtitle) {
+                    subtitle.textContent = copy[mode].subtitle;
+                }
+                gsap.fromTo(heads, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' });
+            },
+        });
+    };
+
+    const activate = (mode) => {
+        const current = Array.from(panels).find((p) => !p.classList.contains('hidden'));
+        const next = Array.from(panels).find((p) => p.dataset.authPanel === mode);
+
+        if (!next || current === next || isAnimating) {
+            return;
         }
 
-        if (subtitle && copy[mode]) {
-            subtitle.textContent = copy[mode].subtitle;
+        isAnimating = true;
+        syncTabs(mode);
+        swapCopy(mode);
+
+        const tl = gsap.timeline({
+            onComplete: () => {
+                isAnimating = false;
+            },
+        });
+
+        // Animate the outgoing panel away.
+        if (current) {
+            tl.to(current, { opacity: 0, y: -10, duration: 0.18, ease: 'power1.in' });
         }
 
-        panels.forEach((panel) => {
-            const isActive = panel.dataset.authPanel === mode;
+        // Swap panels and tween the card height to avoid layout jump.
+        tl.add(() => {
+            const startHeight = card ? card.offsetHeight : 0;
 
-            if (isActive) {
-                panel.classList.remove('hidden');
+            if (current) {
+                current.classList.add('hidden');
+            }
+            next.classList.remove('hidden');
+            gsap.set(next, { opacity: 0, y: 12 });
+
+            if (card) {
+                const endHeight = card.offsetHeight;
                 gsap.fromTo(
-                    panel,
-                    { opacity: 0, y: 12 },
-                    { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' },
+                    card,
+                    { height: startHeight },
+                    {
+                        height: endHeight,
+                        duration: 0.35,
+                        ease: 'power3.out',
+                        onComplete: () => gsap.set(card, { clearProps: 'height' }),
+                    },
                 );
-            } else {
-                panel.classList.add('hidden');
             }
         });
+
+        // Reveal the incoming panel.
+        tl.to(next, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }, '>-0.08');
     };
 
     tabs.forEach((tab) => {
@@ -2617,9 +2671,122 @@ function initDashboardCharts() {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 }
 
+// Landing page: nav scroll state, mobile menu, scroll reveals, timeline + ledger motion.
+function initLanding() {
+    const page = document.querySelector('[data-page="landing"]');
+
+    if (!page) {
+        return;
+    }
+
+    // Navbar turns solid once the visitor scrolls past the hero top.
+    const nav = document.querySelector('[data-landing-nav]');
+
+    if (nav) {
+        const syncNav = () => nav.classList.toggle('nav-scrolled', window.scrollY > 24);
+        syncNav();
+        window.addEventListener('scroll', syncNav, { passive: true });
+    }
+
+    // Mobile menu open/close with a smooth height animation.
+    const menuToggle = document.querySelector('[data-menu-toggle]');
+    const mobileMenu = document.querySelector('[data-mobile-menu]');
+
+    if (menuToggle && mobileMenu) {
+        const closeMenu = () => {
+            gsap.to(mobileMenu, {
+                height: 0,
+                opacity: 0,
+                duration: 0.25,
+                ease: 'power2.in',
+                onComplete: () => mobileMenu.classList.add('hidden'),
+            });
+            menuToggle.setAttribute('aria-expanded', 'false');
+        };
+
+        const openMenu = () => {
+            mobileMenu.classList.remove('hidden');
+            gsap.fromTo(
+                mobileMenu,
+                { height: 0, opacity: 0 },
+                { height: 'auto', opacity: 1, duration: 0.3, ease: 'power2.out' },
+            );
+            menuToggle.setAttribute('aria-expanded', 'true');
+        };
+
+        menuToggle.addEventListener('click', () => {
+            mobileMenu.classList.contains('hidden') ? openMenu() : closeMenu();
+        });
+
+        mobileMenu.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
+    }
+
+    // Single-element scroll reveals.
+    // immediateRender:false keeps content visible by default, so a missed/late
+    // ScrollTrigger can never leave a section permanently hidden. once:true avoids
+    // the reverse-hide on scroll-up.
+    gsap.utils.toArray('[data-animate="reveal"]').forEach((el) => {
+        gsap.from(el, {
+            y: 40,
+            opacity: 0,
+            duration: 0.8,
+            ease: 'power2.out',
+            immediateRender: false,
+            scrollTrigger: { trigger: el, start: 'top 90%', once: true },
+        });
+    });
+
+    // Staggered reveals for grouped children (feature grid, steps, value cards).
+    gsap.utils.toArray('[data-animate="stagger"]').forEach((group) => {
+        gsap.from(group.children, {
+            y: 30,
+            opacity: 0,
+            duration: 0.6,
+            ease: 'power2.out',
+            stagger: 0.12,
+            immediateRender: false,
+            scrollTrigger: { trigger: group, start: 'top 88%', once: true },
+        });
+    });
+
+    // "How it works" vertical progress line fills as the visitor scrolls through it.
+    const stepsLine = document.querySelector('[data-steps-line]');
+
+    if (stepsLine) {
+        gsap.fromTo(
+            stepsLine,
+            { scaleY: 0 },
+            {
+                scaleY: 1,
+                transformOrigin: 'center top',
+                ease: 'none',
+                scrollTrigger: { trigger: stepsLine, start: 'top 75%', end: 'bottom 70%', scrub: true },
+            },
+        );
+    }
+
+    // Looping highlight on the double-entry ledger rows to feel "live".
+    const ledgerRows = gsap.utils.toArray('[data-ledger-row]');
+
+    if (ledgerRows.length) {
+        gsap.timeline({ repeat: -1, repeatDelay: 1.4 })
+            .fromTo(
+                ledgerRows,
+                { backgroundColor: 'rgba(26,163,153,0)' },
+                { backgroundColor: 'rgba(26,163,153,0.14)', duration: 0.5, stagger: 0.3 },
+            )
+            .to(ledgerRows, { backgroundColor: 'rgba(26,163,153,0)', duration: 0.5, delay: 0.9 });
+    }
+
+    // Recompute trigger positions once layout/fonts/images have settled.
+    requestAnimationFrame(() => ScrollTrigger.refresh());
+    window.addEventListener('load', () => ScrollTrigger.refresh());
+}
+
 function boot() {
     initAnimations();
     initAuthPortal();
+    initLanding();
     initPasswordToggles();
     initDropdowns();
     initDashboard();

@@ -16,9 +16,9 @@ class AuthenticationTest extends TestCase
         $this->get(route('login'))->assertOk();
     }
 
-    public function test_root_redirects_guests_to_login(): void
+    public function test_root_shows_landing_page_to_guests(): void
     {
-        $this->get('/')->assertRedirect(route('login'));
+        $this->get('/')->assertOk();
     }
 
     public function test_new_companies_can_register(): void
@@ -88,19 +88,6 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('company.dashboard'));
-    }
-
-    public function test_admin_users_are_routed_to_the_admin_dashboard(): void
-    {
-        $admin = User::factory()->admin()->create();
-
-        $response = $this->post(route('login.store'), [
-            'email' => $admin->email,
-            'password' => 'password',
-        ]);
-
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('admin.dashboard'));
     }
 
     public function test_users_cannot_authenticate_with_an_invalid_password(): void
