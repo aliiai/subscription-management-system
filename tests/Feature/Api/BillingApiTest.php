@@ -110,6 +110,7 @@ class BillingApiTest extends TestCase
             'plan_id' => $plan->id,
             'status' => SubscriptionStatus::Active,
             'price' => 200,
+            'start_date' => '2026-01-01',
         ]);
         Sanctum::actingAs(User::factory()->for($tenant)->create());
 
@@ -120,6 +121,26 @@ class BillingApiTest extends TestCase
             ->assertOk()->assertJsonPath('created', 0);
 
         $this->assertSame(1, $tenant->invoices()->count());
+    }
+
+    public function test_generate_skips_subscriptions_starting_after_the_period(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $customer = Customer::factory()->for($tenant)->create();
+        $plan = Plan::factory()->for($tenant)->create(['price' => 200]);
+        Subscription::factory()->for($tenant)->create([
+            'customer_id' => $customer->id,
+            'plan_id' => $plan->id,
+            'status' => SubscriptionStatus::Active,
+            'price' => 200,
+            'start_date' => '2026-05-01',
+        ]);
+        Sanctum::actingAs(User::factory()->for($tenant)->create());
+
+        $this->postJson('/api/v1/invoices/generate', ['month' => '2026-02'])
+            ->assertOk()->assertJsonPath('created', 0);
+
+        $this->assertSame(0, $tenant->invoices()->count());
         $this->assertLedgerBalanced($tenant);
     }
 

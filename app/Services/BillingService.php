@@ -16,6 +16,8 @@ class BillingService
 
     /**
      * Generate monthly invoices for all active subscriptions of a tenant for the given period.
+     * Only subscriptions that had already started by the end of the period are billed,
+     * so a month before the subscription's start date is never invoiced.
      * Idempotent: a subscription already invoiced for the period is skipped.
      */
     public function generateForTenant(Tenant $tenant, Carbon $period): int
@@ -26,6 +28,7 @@ class BillingService
 
         $tenant->subscriptions()
             ->where('status', SubscriptionStatus::Active)
+            ->whereDate('start_date', '<=', $periodEnd)
             ->with(['plan', 'customer'])
             ->get()
             ->each(function (Subscription $subscription) use ($tenant, $periodStart, $periodEnd, &$created) {
